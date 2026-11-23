@@ -1,0 +1,62 @@
+# EDM: E(3)-equivariant diffusion (Hoogeboom et al., 2022).
+# @package _global_
+name: edm
+
+data:
+  name: qm9                          # qm9 | synthetic (smoke test)
+  root: ${oc.env:DATA_DIR,./data}/qm9
+  atomic_nb: [1, 6, 7, 8, 9]         # class order; class index = position here
+  pos_scale: 1.0
+  num_workers: 4
+  batch_size: 64                     # per GPU; identical for the three methods
+  eval_num: 1024
+  eval_batch_size: 64
+  n_node_histogram: [0, 0, 0, 1, 4, 5, 9, 16, 49, 124, 362, 807, 1689, 3060,
+                     5136, 7796, 10644, 13025, 13364, 13832, 9482, 9970, 3393,
+                     4848, 539, 1506, 48, 266, 0, 25]
+  limit: null
+  fold: -1
+  n_folds: 3
+  valid_limit: 512
+  valid_batches: 8
+
+model:
+  hidden_nf: 256
+  n_layers: 9
+  attention: false
+  tanh: true
+  coords_range: 10.0
+  norm_constant: 1.0
+  time_embed_dim: 128
+
+diffusion:
+  n_timesteps: 1000
+  cosine_s: 0.008
+  loss_weight: snr                   # none | snr
+  w_clip: 100.0
+  lambda_h: 0.1
+  sample_steps: 1000                 # reverse steps used by evaluate.py
+  sample_eta: 0.0                    # 0 = DDIM, 1 = DDPM
+  clip_denoise: 1000.0
+
+train:
+  max_steps: 10000                   # the shared optimisation budget
+  lr: 0.0002
+  weight_decay: 0.000000000001
+  warmup_ratio: 0.05
+  grad_clip: 5.0
+  ema_decay: 0.0                     # 0 disables EMA: raw weights are evaluated
+  amp: bf16
+  seed: 0
+  log_every: 50
+  eval_every: 1000
+  ckpt_every: 1000
+  ckpt_keep_all: false               # also keep ckpt/step%06d.pt
+  analysis_every: 2000               # sampling analysis every N steps (0 = off)
+  analysis_num: 128
+  analysis_steps: 100                # reverse steps of that analysis
+  analysis_pca: true
+  analysis_save_samples: true
+  skip_training: false               # true: evaluate eval.ckpt and stop
+  out_dir: ${hydra:runtime.output_dir}
+  resume: false

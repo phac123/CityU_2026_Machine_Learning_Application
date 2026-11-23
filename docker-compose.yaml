@@ -1,0 +1,69 @@
+# docker compose file for the project image.
+#
+# All four host directories are configured in .env (created by `make init`):
+#
+#   CODE_DIR       the repository, mounted at /workspace/code   (read-write, live edits)
+#   DATA_DIR       datasets,          mounted at /workspace/data
+#   LOG_DIR        runs / checkpoints,mounted at /workspace/logs
+#   CONTAINER_DIR  container $HOME,   mounted at /container     (pip/torch/HF caches)
+#
+# `docker compose run --rm dev bash` (i.e. `make in`) gives a shell inside the
+# image with all four mounts in place.
+
+name: molgen
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    image: molgen:${IMAGE_TAG:-latest}
+    container_name: ${CONTAINER_NAME:-molgen}
+    working_dir: /workspace/code
+    env_file:
+      - .env
+    environment:
+      CODE_DIR: /workspace/code
+      DATA_DIR: /workspace/data
+      LOG_DIR: /workspace/logs
+      MASTER_PORT: ${MASTER_PORT:-29500}
+      NCCL_DEBUG: ${NCCL_DEBUG:-WARN}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ${CODE_DIR:-.}:/workspace/code
+      - ${DATA_DIR:-./data}:/workspace/data
+      - ${LOG_DIR:-./logs}:/workspace/logs
+      - ${CONTAINER_DIR:-./.container}:/container
+    # NCCL needs a large shared-memory segment and a raised memlock limit
+    shm_size: "16gb"
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+      - "${MASTER_PORT:-29500}:29500"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # Same image, no project mounts: used by `make test` to run the unit checks on a
+  # clean checkout of the code only.
+  test:
+    image: molgen:${IMAGE_TAG:-latest}
+    working_dir: /workspace/code
+    volumes:
+      - ${CODE_DIR:-.}:/workspace/code:ro
+    ipc: host
+    entrypoint: ["bash", "-lc"]
+    command: "python tests/test_math.py && python tests/test_tokenizer.py && python tests/test_docker_cli.py"

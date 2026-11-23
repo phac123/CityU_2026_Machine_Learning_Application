@@ -1,0 +1,26 @@
+# Cross-validation grid for the GeoBFN branch (`python cv.py method=geobfn +cv=geobfn`).
+#
+# One candidate is one complete training configuration; every candidate is trained
+# once per fold with the small budget below, and the one with the lowest mean
+# validation loss is used for the 10 000-step run.
+# @package _global_
+cv:
+  folds: [0, 1, 2]
+  n_folds: 3
+  budget:
+    max_steps: 500          # cheap: 500 steps per (candidate, fold)
+    limit: 4000             # training molecules per fold
+    valid_limit: 512        # validation molecules per fold
+    valid_batches: 8
+    lr: 0.0001              # baseline learning rate (candidates may override it)
+  candidates:
+    - name: base
+      overrides: {}
+    - name: lr_high
+      overrides: {train.lr: 0.0003}
+    - name: lr_low
+      overrides: {train.lr: 0.00005}
+    - name: layers6
+      overrides: {model.n_layers: 6}
+    - name: sigma_charges
+      overrides: {model.sigma1_charges: 0.05}

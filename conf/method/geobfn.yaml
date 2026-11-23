@@ -1,0 +1,60 @@
+# GeoBFN: Bayesian flow networks (the paper this project is built on).
+# @package _global_
+name: geobfn
+
+data:
+  name: qm9                          # qm9 | synthetic (smoke test)
+  root: ${oc.env:DATA_DIR,./data}/qm9
+  atomic_nb: [1, 6, 7, 8, 9]         # H, C, N, O, F
+  bins: 9                            # K: one bin centre per element
+  pos_scale: 1.0
+  num_workers: 4
+  batch_size: 64                     # per GPU; identical for the three methods
+  eval_num: 1024
+  eval_batch_size: 64
+  n_node_histogram: [0, 0, 0, 1, 4, 5, 9, 16, 49, 124, 362, 807, 1689, 3060,
+                     5136, 7796, 10644, 13025, 13364, 13832, 9482, 9970, 3393,
+                     4848, 539, 1506, 48, 266, 0, 25]
+  limit: null                        # cap the training split (CV sets this)
+  fold: -1                           # >=0: k-fold cross-validation fold
+  n_folds: 3
+  valid_limit: 512                   # cap the validation split
+  valid_batches: 8                   # batches per validation estimate
+
+model:
+  in_node_nf: 16
+  hidden_nf: 256
+  n_layers: 9
+  attention: false
+  sigma1_coord: 0.001                # accuracy rho(1) = sigma1^-2 = 1e6
+  sigma1_charges: 0.15
+  t_min: 0.0001
+  charge_clamp: true
+  mu_clamp: 10.0
+  loss_space: eps                    # Eq. (19) exactly, numerically stable
+
+train:
+  max_steps: 10000                   # the shared optimisation budget
+  lr: 0.0001
+  weight_decay: 0.000000000001
+  warmup_ratio: 0.05                 # linear warm-up, then a constant lr
+  grad_clip: 5.0
+  skip_bad_step: true
+  accum_steps: 1
+  ema_decay: 0.0                     # 0 disables EMA: raw weights are evaluated
+  amp: bf16
+  loss_scale: 1024.0
+  seed: 0
+  log_every: 50                      # steps between loss records
+  eval_every: 1000                   # steps between validation passes
+  ckpt_every: 1000                   # steps between checkpoints
+  sample_steps: 1000                 # reverse steps used by evaluate.py
+  ckpt_keep_all: false               # also keep ckpt/step%06d.pt
+  analysis_every: 2000               # sampling analysis every N steps (0 = off)
+  analysis_num: 128                  # molecules per periodic analysis
+  analysis_steps: 100                # reverse steps of that analysis
+  analysis_pca: true                 # PCA position on the training manifold
+  analysis_save_samples: true
+  skip_training: false               # true: evaluate eval.ckpt and stop
+  out_dir: ${hydra:runtime.output_dir}
+  resume: false

@@ -1,0 +1,22 @@
+# Cross-validation grid for the LLM branch (`python cv.py method=llm +cv=llm`).
+# @package _global_
+cv:
+  folds: [0, 1, 2]
+  n_folds: 3
+  budget:
+    max_steps: 500
+    limit: 4000
+    valid_limit: 512
+    valid_batches: 8
+    lr: 0.0005
+  candidates:
+    - name: base
+      overrides: {}
+    - name: lr_high
+      overrides: {train.lr: 0.001}
+    - name: lr_low
+      overrides: {train.lr: 0.0002}
+    - name: layers8
+      overrides: {model.n_layer: 8}
+    - name: no_augment
+      overrides: {data.randomize: false}

@@ -1,0 +1,52 @@
+# Global configuration for the three methods.
+#
+#   python train.py                                       # GeoBFN with defaults
+#   python train.py method=edm data.batch_size=32          # switch method + override
+#   python train.py method=llm model.n_layer=8 train.lr=3e-4
+#   python evaluate.py method=edm eval.ckpt=/workspace/logs/edm/.../best.pt
+#
+# ``method`` is a config group: conf/method/{geobfn,edm,llm}.yaml each define the
+# complete ``data`` / ``model`` / ``train`` blocks of one branch.  Everything that
+# is common to the three branches lives here.
+
+defaults:
+  - method: geobfn
+  - _self_
+
+seed: 0
+smoke: false            # true -> synthetic data + tiny model (make smoke)
+
+# Distributed data parallel.  The process layout itself comes from the launcher
+# (torchrun sets RANK / WORLD_SIZE / LOCAL_RANK / MASTER_ADDR / MASTER_PORT);
+# these are the knobs the training code reads.
+ddp:
+  backend: null            # null -> nccl on CUDA, gloo otherwise
+  timeout_minutes: 30      # generous: sampling evaluation can be slow
+  find_unused_parameters: false
+
+# Evaluation / sampling settings (used by evaluate.py).
+eval:
+  ckpt: null               # required for evaluate.py
+  num: 1024                # molecules (or strings) to generate
+  steps: null              # reverse steps; null -> value from the checkpoint
+  eta: null                # diffusion only: 0 = DDIM, 1 = DDPM
+  temperature: null        # LLM only
+  top_k: null              # LLM only
+  cond: null               # LLM only: property bucket for conditional sampling
+  batch_size: 64
+  use_ema: false           # the comparison evaluates raw weights (no EMA)
+  seed: 0
+  conformers: false        # LLM only: embed the strings in 3D with ETKDG + MMFF
+  out: null                # .xyz (geometric) or .smi (LLM)
+  xyz_out: null            # LLM only: 3D conformers
+  json_out: null           # metrics dump
+
+# Run directory: one folder per run under $LOG_DIR (mounted from the host).
+hydra:
+  run:
+    dir: ${oc.env:LOG_DIR,./logs}/${name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: ${oc.env:LOG_DIR,./logs}/multirun/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${hydra.job.num}
+  job:
+    chdir: false           # keep relative paths anchored at the project root

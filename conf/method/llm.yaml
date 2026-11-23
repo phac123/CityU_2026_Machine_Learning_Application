@@ -1,0 +1,50 @@
+# LLM: a decoder-only Transformer over SMILES, with an ETKDG bridge to 3D.
+# @package _global_
+name: llm
+
+data:
+  name: qm9                          # qm9 | synthetic (built-in corpus)
+  root: ${oc.env:DATA_DIR,./data}/qm9
+  limit: null                        # cap the corpus (CV sets this)
+  max_len: 64                        # tokens per SMILES, including <bos>/<eos>
+  min_token_count: 1
+  max_vocab: 256
+  n_cond_bins: 0                     # >0 enables p(S | property decile)
+  randomize: true                    # random SMILES augmentation
+  num_workers: 4
+  batch_size: 64                     # per GPU; identical for the three methods
+  eval_batch_size: 64
+  fold: -1
+  n_folds: 3
+  valid_limit: 512
+  valid_batches: 8
+
+model:
+  d_model: 256
+  n_head: 8
+  n_layer: 6
+  dropout: 0.1
+  tie_embeddings: true
+
+train:
+  max_steps: 10000                   # the shared optimisation budget
+  lr: 0.0005
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  grad_clip: 1.0
+  amp: bf16
+  seed: 0
+  log_every: 50
+  eval_every: 1000
+  ckpt_every: 1000                   # steps between checkpoints
+  ckpt_keep_all: false               # also keep ckpt/step%06d.pt
+  analysis_every: 2000               # sampling analysis every N steps (0 = off)
+  analysis_num: 128                  # strings per periodic analysis
+  analysis_pca: true                 # PCA position on the training manifold
+  analysis_save_samples: true
+  skip_training: false               # true: evaluate eval.ckpt and stop
+  sample_num: 128                    # strings drawn by the periodic sanity check
+  sample_temperature: 0.9
+  sample_top_k: 50
+  out_dir: ${hydra:runtime.output_dir}
+  resume: false
