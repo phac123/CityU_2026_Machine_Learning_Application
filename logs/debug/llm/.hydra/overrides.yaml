@@ -1,0 +1,10 @@
+- method=llm
+- train.max_steps=20
+- data.num_workers=0
+- data.batch_size=8
+- train.log_every=1
+- train.progress_every=1
+- train.eval_every=20
+- train.analysis_every=0
+- train.ckpt_every=20
+- ddp.timeout_minutes=2

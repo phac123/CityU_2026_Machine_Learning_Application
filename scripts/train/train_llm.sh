@@ -29,7 +29,7 @@ SEED="${SEED:-0}"
 
 has_override train.max_steps "$@" || EXTRA+=("train.max_steps=${STEPS}")
 has_override data.batch_size "$@" || EXTRA+=("data.batch_size=${BATCH}")
-has_override train.ema_decay "$@" || EXTRA+=("train.ema_decay=0")
+# the language model has no EMA at all, so no ema_decay override
 has_override train.seed "$@"      || EXTRA+=("train.seed=${SEED}")
 
 METHOD=llm exec bash "${ROOT}/scripts/train.sh" "${EXTRA[@]}" "$@"

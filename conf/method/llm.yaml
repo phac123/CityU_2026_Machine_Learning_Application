@@ -1,5 +1,6 @@
-# LLM: a decoder-only Transformer over SMILES, with an ETKDG bridge to 3D.
 # @package _global_
+# LLM: a decoder-only Transformer over SMILES, with an ETKDG bridge to 3D.
+
 name: llm
 
 data:
@@ -35,6 +36,9 @@ train:
   amp: bf16
   seed: 0
   log_every: 50
+  eta_window: 50                     # rolling window of the ETA
+  progress_every: 1                  # print progress every step (0 = off)
+  heartbeat_seconds: 30            # stall warning after N seconds (0 = off)
   eval_every: 1000
   ckpt_every: 1000                   # steps between checkpoints
   ckpt_keep_all: false               # also keep ckpt/step%06d.pt

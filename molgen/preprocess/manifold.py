@@ -65,6 +65,21 @@ class DescriptorManifold:
         obj._scale = scale
         return obj
 
+    def scores(self, smiles: Sequence[str], n_components: Optional[int] = None
+               ) -> np.ndarray:
+        """Whitened PCA coordinates of ``smiles`` ([n, k]) for plotting.
+
+        Rows that RDKit cannot featurise are dropped, so the returned array can be
+        shorter than the input; ``project`` is the statistics-only counterpart.
+        """
+        x, kept = featurize(smiles)
+        k = self.components.shape[0] if n_components is None else int(n_components)
+        if len(kept) == 0:
+            return np.zeros((0, k))
+        scale = self._scale if self._scale is not None else np.ones(k)
+        z = (x - self.mu) / self.sd
+        return ((z @ self.components.T) / scale)[:, :k]
+
     # -------------------------------------------------------------- project --
     def project(self, smiles: Sequence[str]) -> Dict[str, float]:
         """Distance statistics of ``smiles`` with respect to the training manifold."""

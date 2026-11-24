@@ -22,7 +22,10 @@ smoke: false            # true -> synthetic data + tiny model (make smoke)
 ddp:
   backend: null            # null -> nccl on CUDA, gloo otherwise
   timeout_minutes: 30      # generous: sampling evaluation can be slow
-  find_unused_parameters: false
+  # true is the safe default: a branch with any parameter that does not receive
+  # a gradient in a given batch would otherwise abort the next backward with
+  # "Expected to have finished reduction in the prior iteration"
+  find_unused_parameters: true
 
 # Evaluation / sampling settings (used by evaluate.py).
 eval:

@@ -30,10 +30,12 @@ def sample_strings(cfg, model, tokenizer, device: torch.device,
     from .sampler import sample_smiles
 
     model.eval()
+    # the language model has no data.eval_num: fall back to train.sample_num
+    default_num = int(getattr(cfg.train, "sample_num", 128))
     return sample_smiles(
         model,
         tokenizer,
-        int(num if num is not None else cfg.data.eval_num),
+        int(num) if num is not None else default_num,
         device,
         max_new_tokens=cfg.data.max_len,
         temperature=float(temperature if temperature is not None

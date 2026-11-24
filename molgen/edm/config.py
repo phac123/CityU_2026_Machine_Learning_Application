@@ -79,6 +79,9 @@ class TrainConfig:
     ema_decay: float = 0.0           # 0 disables EMA: raw weights are evaluated
     amp: str = "bf16"                  # none | bf16 | fp16
     seed: int = 0
+    heartbeat_seconds: int = 30      # print a stall warning after N s (0 = off)
+    progress_every: int = 1          # steps between progress lines (0 = off)
+    eta_window: int = 50             # steps in the ETA window (rolling)
     log_every: int = 50
     eval_every: int = 1000           # steps between validation passes
     ckpt_every: int = 1000           # steps between checkpoints
@@ -108,6 +111,10 @@ class Config:
 
 
 SECTIONS = ("data", "model", "diffusion", "train")
+
+#: Keys of the global Hydra config that belong to the run, not to the
+#: method: the dispatcher and the launchers read them directly.
+SHARED_KEYS = ("name", "seed", "smoke", "ddp", "eval", "cv", "budget", "hydra")
 
 
 def _build(cls, value: Any):
@@ -174,7 +181,7 @@ def load_config(path: Optional[str] = None, overrides: Optional[List[str]] = Non
         for section in SECTIONS:
             if section in raw and isinstance(raw[section], dict):
                 setattr(cfg, section, _build(type(getattr(cfg, section)), raw[section]))
-        unknown = set(raw) - set(SECTIONS)
+        unknown = set(raw) - set(SECTIONS) - set(SHARED_KEYS)
         if unknown:
             raise KeyError(f"unknown config sections: {sorted(unknown)}")
     return apply_overrides(cfg, overrides or [])
@@ -193,7 +200,7 @@ def save_config(cfg: Config, path: str) -> None:
 def from_hydra(node) -> Config:
     """Build the dataclass config from a Hydra/OmegaConf node.
 
-    Only the ``data``/``model``/``train``sections {data, model, diffusion, train} sections are read; everything
+    Only the sections declared by this branch (see ``SECTIONS``) are read; everything
     else in the global Hydra config (the method switch, the eval block, Hydra's own
     bookkeeping) is ignored here.  Values must already be resolvable, so the caller
     passes the composed config before any interpolation is deferred.
@@ -205,7 +212,7 @@ def from_hydra(node) -> Config:
     for section in SECTIONS:
         if section in raw and isinstance(raw[section], dict):
             setattr(cfg, section, _build(type(getattr(cfg, section)), raw[section]))
-    unknown = set(raw) - set(SECTIONS)
+    unknown = set(raw) - set(SECTIONS) - set(SHARED_KEYS)
     if unknown:
         raise KeyError(f"unknown config sections for this method: {sorted(unknown)}")
     return cfg

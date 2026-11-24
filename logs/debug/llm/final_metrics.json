@@ -1,0 +1,24 @@
+{
+  "method": "llm",
+  "analysis": {
+    "n_raw": 128.0,
+    "n_valid": 4.0,
+    "validity": 0.03125,
+    "uniqueness": 1.0,
+    "novelty": 1.0,
+    "pca_n": 4.0,
+    "pca_outside": 1.0,
+    "pca_mahal_ratio": 3.580635209846608,
+    "pca_nn_mean": 3.8761570888237937,
+    "pca_var12": 0.5326746697406651,
+    "eval_seconds": 0.6
+  },
+  "valid_loss": 2.306419849395752,
+  "valid_ppl": 10.038421184876304,
+  "train_loss": 2.2010741233825684,
+  "step": 20,
+  "fold": -1,
+  "max_steps": 20,
+  "batch_size": 8,
+  "world_size": 1
+}

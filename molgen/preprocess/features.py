@@ -19,7 +19,23 @@ Descriptors (all RDKit built-ins, so the numbers are reproducible):
 
 from __future__ import annotations
 
+import os
 from typing import Dict, List, Optional, Sequence
+
+# --------------------------------------------------------------------------- #
+# OpenBLAS / OpenMP threads: set before numpy is imported.
+#
+# A many-core node (8 GPUs usually means 64-128 cores) makes OpenBLAS default to
+# nproc threads, which can exceed the thread metadata the wheel was built with:
+# the result is "Bad memory unallocation" followed by a double free and a core
+# dump inside KMeans / silhouette.  Capping the pool is the documented fix.
+# Values from the environment (docker-compose sets OMP_NUM_THREADS) win.
+# --------------------------------------------------------------------------- #
+for _threads_var, _threads_value in (("OPENBLAS_NUM_THREADS", "8"),
+                                     ("OMP_NUM_THREADS", "8"),
+                                     ("MKL_NUM_THREADS", "8"),
+                                     ("NUMEXPR_NUM_THREADS", "8")):
+    os.environ.setdefault(_threads_var, _threads_value)
 
 import numpy as np
 
@@ -113,6 +129,9 @@ if __name__ == "__main__":
     for name, mean in zip(table["names"], table["X"].mean(axis=0)):
         print(f"  {name:10s} {mean:10.4f}")
     if args.out:
+        import os
+
+        os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
         np.savez(args.out, X=table["X"], names=np.array(table["names"]),
                  smiles=np.array(table["smiles"]))
         print(f"wrote {args.out}")

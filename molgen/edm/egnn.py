@@ -136,6 +136,10 @@ class EGNN(nn.Module):
     ):
         super().__init__()
         self.time_embed = SinusoidalTimeEmbedding(time_embed_dim, time_embed_dim)
+        # The blocks consume the raw time embedding (time_embed_dim), but it is added
+        # to the node features, which live at width hidden_nf: project it, so that the
+        # two widths are independent (they used to have to be equal).
+        self.time_to_hidden = nn.Linear(time_embed_dim, hidden_nf)
         self.embedding = nn.Linear(in_node_nf, hidden_nf)
         self.blocks = nn.ModuleList(
             [
@@ -158,7 +162,7 @@ class EGNN(nn.Module):
             E(3)-equivariant estimate of the noise added to the coordinates.
         """
         temb = self.time_embed(t)                               # [N, T]
-        h = self.embedding(h) + temb
+        h = self.embedding(h) + self.time_to_hidden(temb)
         x0 = x
         for blk in self.blocks:
             h, x = blk(h, x, edge_index, temb)
